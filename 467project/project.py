@@ -22,7 +22,23 @@ def backgroundSubtraction(img):
     cv2.drawContours(mask, [cnt], 0, 255, -1)
     #extract outside of contour
     out = cv2.bitwise_and(img, img, mask=mask)
-    return out
+    left = 5000
+    right = 0
+    bottom = 5000
+    top = 0
+    #find the lefttop , rightbottom, leftbottom, righttop
+    for i in range(0, len(cnt)):
+        if cnt[i][0][0] < left:
+            left = cnt[i][0][0]
+        if cnt[i][0][0] > right:
+            right = cnt[i][0][0]
+        if cnt[i][0][1] < bottom:
+            bottom = cnt[i][0][1]
+        if cnt[i][0][1] > top:
+            top = cnt[i][0][1]
+    cornersArr = np.float32([[[left, bottom]] , [[right, bottom]] , [[left, top]] , [[right, top]]])
+
+    return out,cornersArr
 
 def SIFTMatching(img1, img2):
     #convert to grayscale
@@ -44,10 +60,20 @@ def SIFTMatching(img1, img2):
     img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, None, flags=2)
     return img3
 
+def wrapFlat(img, cornersArr):
+    #wrap the image
+    width = 1280
+    height = 576
+    pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+    matrix  = cv2.getPerspectiveTransform(cornersArr, pts2)
+    img = cv2.warpPerspective(img, matrix, (width, height))
+    return img
+
 
 #show image
 #cv2.imshow('out', cv2.resize(backgroundSubtraction(img),(0,0),fx=0.2,fy=0.2))
-cv2.imshow('out2', SIFTMatching(backgroundSubtraction(img), img2))
+c , b = backgroundSubtraction(img) 
+cv2.imshow('out', wrapFlat(c, b))
 cv2.waitKey(0)
 
 
