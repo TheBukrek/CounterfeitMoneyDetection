@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/pkgs/tesseract-5.0.1-h6be3199_0/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
 
 #read IMG-0227.jpg
 img = cv2.imread('IMG-0227.jpg')
@@ -69,10 +69,12 @@ def wrapFlat(img, cornersArr):
     img = cv2.warpPerspective(img, matrix, (width, height))
     return img
 
-
 #show image
 #cv2.imshow('out', cv2.resize(backgroundSubtraction(img),(0,0),fx=0.2,fy=0.2))
 c , b = backgroundSubtraction(img) 
+text = pytesseract.image_to_string(c)
+print(text)
+
 cv2.imshow('out', wrapFlat(c, b))
 cv2.waitKey(0)
 
