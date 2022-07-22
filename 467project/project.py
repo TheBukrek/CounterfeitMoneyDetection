@@ -4,7 +4,7 @@ import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
 
 #read IMG-0227.jpg
-img = cv2.imread('IMG-0227.jpg')
+img = cv2.imread('IMG-0233.jpg')
 img2 = cv2.imread('IMG-0227-2.jpg')
 
 def backgroundSubtraction(img):
@@ -76,9 +76,7 @@ def getText(img):
 #show image
 #cv2.imshow('out', cv2.resize(backgroundSubtraction(img),(0,0),fx=0.2,fy=0.2))
 c , b = backgroundSubtraction(img) 
-text = getText(c)
-print(text)
-cv2.imshow('out', wrapFlat(c, b))
+cv2.imshow('out', c)
 cv2.waitKey(0)
 
 
