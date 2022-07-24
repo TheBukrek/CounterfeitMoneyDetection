@@ -1,11 +1,12 @@
 import cv2
+from cv2 import bitwise_not
 import numpy as np
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
 
 #read IMG-0227.jpg
-img = cv2.imread('IMG-0233.jpg')
-img2 = cv2.imread('IMG-0227-2.jpg')
+img = cv2.imread('IMG-0247.jpg')
+img2 = cv2.imread('IMG-0250.jpg')
 
 def backgroundSubtraction(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -73,10 +74,63 @@ def getText(img):
     #get text from image
     text = pytesseract.image_to_string(img, lang='tur')
     return text
-#show image
-#cv2.imshow('out', cv2.resize(backgroundSubtraction(img),(0,0),fx=0.2,fy=0.2))
-c , b = backgroundSubtraction(img) 
-cv2.imshow('out', c)
+
+def align_Images(img, template, maxFeatures=2000, keepPercent=0.5,debug = False):
+    imageGray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
+    templateGray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+    orb = cv2.ORB_create(maxFeatures)
+    (kp1, des1) = orb.detectAndCompute(imageGray, None)
+    (kp2, des2) = orb.detectAndCompute(templateGray, None)
+    method = cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING
+    matcher = cv2.DescriptorMatcher_create(method)
+    matches = matcher.match(des1, des2, None)
+    
+    matches = sorted(matches, key=lambda x:x.distance)
+
+    keep  = int(len(matches) * keepPercent)
+    matches = matches[:keep]
+    if debug:
+        img3 = cv2.drawMatches(imageGray, kp1, templateGray, kp2, matches, None, flags=2)
+        cv2.namedWindow('img3', cv2.WINDOW_NORMAL)
+        cv2.imshow("img3", img3)
+        cv2.waitKey(0)
+    
+    points1 = np.zeros((len(matches), 2), dtype="float")
+    points2 = np.zeros((len(matches), 2), dtype="float")
+
+    for (i, match) in enumerate(matches):
+        points1[i] = kp1[match.queryIdx].pt
+        points2[i] = kp2[match.trainIdx].pt
+
+    (h, mask) = cv2.findHomography(points1, points2, method = cv2.RANSAC)
+    height, width = template.shape[:2]
+    aligned = cv2.warpPerspective(img, h, (width, height))
+    return aligned
+
+def cropImage(img, x, y, w, h):
+    #crop image
+    img = img[y:y+h, x:x+w]
+    return img
+
+def binarize(img, threshold):
+    #binarize image
+    ret, thresh = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
+    return thresh
+
+#https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
+#y2000 - 2100
+#x1100 - 1700
+
+cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+a = align_Images(img2, img)
+b = cropImage(a, 1100, 2000, 1700-1100, 2100-2000)
+#convert to grayscale
+b = cv2.cvtColor(b, cv2.COLOR_BGR2GRAY)
+c = binarize(b, 50)
+c = cv2.bitwise_not(c)
+d = cv2.dilate(c, np.ones((5,5), np.uint8))
+print(getText(d))
+cv2.imshow('image',c)
 cv2.waitKey(0)
 
 
