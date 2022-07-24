@@ -1,12 +1,17 @@
 import cv2
-from cv2 import bitwise_not
+from cv2 import threshold
 import numpy as np
-import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
+# import pytesseract
+# pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
+# import keras_ocr
+# pipeline = keras_ocr.pipeline.Pipeline()
 
 #read IMG-0227.jpg
-img = cv2.imread('IMG-0247.jpg')
-img2 = cv2.imread('IMG-0250.jpg')
+img = cv2.imread('IMG-0242.jpg')
+img2 = cv2.imread('./SayisalDegerler/5.jpg')
+img3 = cv2.imread('IMG-0243.jpg')
+
+SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"]]
 
 def backgroundSubtraction(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -41,7 +46,7 @@ def backgroundSubtraction(img):
 
     return out,cornersArr
 
-def SIFTMatching(img1, img2):
+def SIFTMatching(img1, img2,threshold=0.25, debug = False):
     #convert to grayscale
     img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -55,25 +60,24 @@ def SIFTMatching(img1, img2):
     #ratio test
     good = []
     for m, n in matches:
-        if m.distance < 0.25* n.distance:
+        if m.distance < threshold* n.distance:
             good.append([m])
     #draw matches
-    img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, None, flags=2)
-    return img3
+    if debug:
+        img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, None, flags=2)
+        cv2.namedWindow('img3', cv2.WINDOW_NORMAL)
+        cv2.imshow("img3", img3)
+        cv2.waitKey(0)
+    return  good
 
-def wrapFlat(img, cornersArr):
-    #wrap the image
-    width = 1280
-    height = 576
-    pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
-    matrix  = cv2.getPerspectiveTransform(cornersArr, pts2)
-    img = cv2.warpPerspective(img, matrix, (width, height))
-    return img
+# def getTextKeras(img):
+#     prediction_groups = pipeline.recognize(img)
+#     return prediction_groups
 
-def getText(img):
-    #get text from image
-    text = pytesseract.image_to_string(img, lang='tur')
-    return text
+# def getTextTesseract(img):
+#     #get text from image
+#     text = pytesseract.image_to_string(img, lang='tur')
+#     return text
 
 def align_Images(img, template, maxFeatures=2000, keepPercent=0.5,debug = False):
     imageGray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -84,9 +88,7 @@ def align_Images(img, template, maxFeatures=2000, keepPercent=0.5,debug = False)
     method = cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING
     matcher = cv2.DescriptorMatcher_create(method)
     matches = matcher.match(des1, des2, None)
-    
     matches = sorted(matches, key=lambda x:x.distance)
-
     keep  = int(len(matches) * keepPercent)
     matches = matches[:keep]
     if debug:
@@ -94,43 +96,56 @@ def align_Images(img, template, maxFeatures=2000, keepPercent=0.5,debug = False)
         cv2.namedWindow('img3', cv2.WINDOW_NORMAL)
         cv2.imshow("img3", img3)
         cv2.waitKey(0)
-    
     points1 = np.zeros((len(matches), 2), dtype="float")
     points2 = np.zeros((len(matches), 2), dtype="float")
-
     for (i, match) in enumerate(matches):
         points1[i] = kp1[match.queryIdx].pt
         points2[i] = kp2[match.trainIdx].pt
-
     (h, mask) = cv2.findHomography(points1, points2, method = cv2.RANSAC)
     height, width = template.shape[:2]
     aligned = cv2.warpPerspective(img, h, (width, height))
     return aligned
 
 def cropImage(img, x, y, w, h):
-    #crop image
     img = img[y:y+h, x:x+w]
     return img
 
 def binarize(img, threshold):
-    #binarize image
     ret, thresh = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
     return thresh
 
-#https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
-#y2000 - 2100
-#x1100 - 1700
+def getValue(img):
+    banknot5 = cv2.imread('./SayisalDegerler/5.jpg')
+    banknot10 = cv2.imread('./SayisalDegerler/10.jpg')
+    banknot20 = cv2.imread('./SayisalDegerler/20.jpg')
+    banknot50 = cv2.imread('./SayisalDegerler/50.jpg')
+    banknot100 = cv2.imread('./SayisalDegerler/100.jpg')
+    banknot200 = cv2.imread('./SayisalDegerler/200.jpg')
+    a = [banknot5, banknot10, banknot20, banknot50, banknot100, banknot200]
+    for i in range(len(a)):
+        if (len(SIFTMatching(img, a[i],threshold= 0.6)) > 10):
+            return i
+    return -1
 
+
+
+
+#https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
+
+
+# print(getTextTesseract(img))
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-a = align_Images(img2, img)
-b = cropImage(a, 1100, 2000, 1700-1100, 2100-2000)
-#convert to grayscale
-b = cv2.cvtColor(b, cv2.COLOR_BGR2GRAY)
-c = binarize(b, 50)
-c = cv2.bitwise_not(c)
-d = cv2.dilate(c, np.ones((5,5), np.uint8))
-print(getText(d))
-cv2.imshow('image',c)
+# a = align_Images(img, img2, keepPercent=0.25)
+# #crop image
+
+# print(getTextTesseract(a))
+c = align_Images(img3, img, keepPercent=0.25)
+cv2.imshow('image', c)
 cv2.waitKey(0)
+
+print(getValue(c))
+print("a")
+# cv2.imshow('image',img2)
+# cv2.waitKey(0)
 
 
