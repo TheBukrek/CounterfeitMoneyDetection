@@ -1,15 +1,19 @@
 import cv2
 from cv2 import threshold
 import numpy as np
+from paddleocr import PaddleOCR, draw_ocr
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+ocr_model = PaddleOCR(lang='en')
 # import pytesseract
 # pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
 # import keras_ocr
 # pipeline = keras_ocr.pipeline.Pipeline()
 
 #read IMG-0227.jpg
-img = cv2.imread('IMG-0242.jpg')
+img = cv2.imread('IMG-0247.jpg')
 img2 = cv2.imread('./SayisalDegerler/5.jpg')
-img3 = cv2.imread('IMG-0243.jpg')
+img3 = cv2.imread('IMG-0250.jpg')
 
 SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"]]
 
@@ -114,6 +118,20 @@ def binarize(img, threshold):
     ret, thresh = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
     return thresh
 
+def switch(i):
+    if i == 0:
+        return 5
+    elif i == 1:
+        return "10"
+    elif i == 2:
+        return "20"
+    elif i == 3:
+        return "50"
+    elif i == 4:
+        return "100"
+    elif i == 5:
+        return "200"
+
 def getValue(img):
     banknot5 = cv2.imread('./SayisalDegerler/5.jpg')
     banknot10 = cv2.imread('./SayisalDegerler/10.jpg')
@@ -127,8 +145,29 @@ def getValue(img):
             return i
     return -1
 
+def compareFeatures(img, banknot):
+    boolArr = [False, False, False, False, False]
+    feature1 = cv2.imread('./'+banknot+'lira/')
+    feature2 = cv2.imread('./'+banknot+'lira/')
+    feature3 = cv2.imread('./'+banknot+'lira/')
+    feature4 = cv2.imread('./'+banknot+'lira/')
+    feature5 = cv2.imread('./'+banknot+'lira/')
 
+    if (len(SIFTMatching(img, feature1,threshold= 0.6)) > 10):
+        boolArr[0] = True
+    if (len(SIFTMatching(img, feature2,threshold= 0.6)) > 10):
+        boolArr[1] = True
+    if (len(SIFTMatching(img, feature3,threshold= 0.6)) > 10):
+        boolArr[2] = True
+    if (len(SIFTMatching(img, feature4,threshold= 0.6)) > 10):
+        boolArr[3] = True
+    if (len(SIFTMatching(img, feature5,threshold= 0.6)) > 10):
+        boolArr[4] = True
+        
+    return boolArr[0]&boolArr[1]&boolArr[2]&boolArr[3]&boolArr[4]
 
+def getSerialNumber(img):
+    return ocr_model.ocr(img)
 
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
@@ -139,11 +178,10 @@ cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 # #crop image
 
 # print(getTextTesseract(a))
-c = align_Images(img3, img, keepPercent=0.25)
-cv2.imshow('image', c)
-cv2.waitKey(0)
-
-print(getValue(c))
+# cv2.imshow('image', c)
+# cv2.waitKey(0)
+result =  getSerialNumber(img)
+print(result)
 print("a")
 # cv2.imshow('image',img2)
 # cv2.waitKey(0)
