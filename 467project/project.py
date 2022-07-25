@@ -1,20 +1,19 @@
 import cv2
 from cv2 import threshold
 import numpy as np
-from paddleocr import PaddleOCR, draw_ocr
+from paddleocr import PaddleOCR
 import os
 import re
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 ocr_model = PaddleOCR(lang='en')
 
-
 #read IMG-0227.jpg
 img = cv2.imread('./5lira/5arkac.jpg')
 img2 = cv2.imread('./5lira/feature1arka.jpg',0)
-img3 = cv2.imread('./test/IMG-0255.jpg')
+img3 = cv2.imread('./test/IMG-0227.jpg')
 
-SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"],["E032024297","5"]]
+SerialNumber = [["E001458613","20"],["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"],["E032024297","5"]]
 AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.51941937,211.44919905],   #5 on arka
 [197.09770052,206.99769764,221.83599514],[190.53522185,199.3998723,222.00563065],  #10
 [190.23110401,206.23049607,219.89297753],[179.4851876,198.05615184,217.17329562], #50
@@ -22,38 +21,39 @@ AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.5194
 [198.70505261,205.32944652,213.69402226],[174.66094381,188.52701888,205.65357185]] #200
 
 regex = "[A-Z][0-9]{9}"
-def backgroundSubtraction(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    #extract biggest object in the image
-    ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    #find contours
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #find the biggest contour
-    cnt = max(contours, key=cv2.contourArea)
-    #draw the biggest contour
-    cv2.drawContours(img, [cnt], 0, (0, 255, 0), 3)
-    #extract outside of contour
-    mask = np.zeros(gray.shape, np.uint8)
-    cv2.drawContours(mask, [cnt], 0, 255, -1)
-    #extract outside of contour
-    out = cv2.bitwise_and(img, img, mask=mask)
-    left = 5000
-    right = 0
-    bottom = 5000
-    top = 0
-    #find the lefttop , rightbottom, leftbottom, righttop
-    for i in range(0, len(cnt)):
-        if cnt[i][0][0] < left:
-            left = cnt[i][0][0]
-        if cnt[i][0][0] > right:
-            right = cnt[i][0][0]
-        if cnt[i][0][1] < bottom:
-            bottom = cnt[i][0][1]
-        if cnt[i][0][1] > top:
-            top = cnt[i][0][1]
-    cornersArr = np.float32([[[left, bottom]] , [[right, bottom]] , [[left, top]] , [[right, top]]])
 
-    return out,cornersArr
+# def backgroundSubtraction(img):
+#     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#     #extract biggest object in the image
+#     ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+#     #find contours
+#     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#     #find the biggest contour
+#     cnt = max(contours, key=cv2.contourArea)
+#     #draw the biggest contour
+#     cv2.drawContours(img, [cnt], 0, (0, 255, 0), 3)
+#     #extract outside of contour
+#     mask = np.zeros(gray.shape, np.uint8)
+#     cv2.drawContours(mask, [cnt], 0, 255, -1)
+#     #extract outside of contour
+#     out = cv2.bitwise_and(img, img, mask=mask)
+#     left = 5000
+#     right = 0
+#     bottom = 5000
+#     top = 0
+#     #find the lefttop , rightbottom, leftbottom, righttop
+#     for i in range(0, len(cnt)):
+#         if cnt[i][0][0] < left:
+#             left = cnt[i][0][0]
+#         if cnt[i][0][0] > right:
+#             right = cnt[i][0][0]
+#         if cnt[i][0][1] < bottom:
+#             bottom = cnt[i][0][1]
+#         if cnt[i][0][1] > top:
+#             top = cnt[i][0][1]
+#     cornersArr = np.float32([[[left, bottom]] , [[right, bottom]] , [[left, top]] , [[right, top]]])
+
+#     return out,cornersArr
 
 def SIFTMatching(img1, img2,threshold=0.25, debug = False):
     #convert to grayscale
@@ -143,83 +143,14 @@ def getValue(img):
             return i
     return -1
 
-def compareText(img):
-    beslira = ["Ord","Prof","Dr","AYDINSAYILI","BES","1913-1993"]
-    onlira = ["Ord","Prof","Dr","CAHIT","ARF","ON","1910-1997"]
-    yirmilira = ["MIMARKEMALEDDIN","1870-1927","YIRMI"]
-    ellilira = ["FATMAALIYE","1862-1936","ELLI"]
-    yuzlira = ["ITRI","1640-1712","YUZ","BuhurizadeMustafafendi"]
-    ikiyuzlira = ["YUNUSEMRE","1238-1320","IKIYUZ"]
-    ortak= ["TURKIYECUMHURIYETIMERKEZANKASI","TURKLIRASI","14OCAK1970TARIHVE1211SAYILIKANUNUNAGORECIKARILMISTIR","BASKAN","BASKANYARDIMCISI","TURKIYECUMHURIYETIMERKEZBANKASIBANKNOTMATBAASI2009"]
-
-
-def compareFeatures(img, banknot, onArkaVar):
-    boolArr = [False, False, False]
-    if(onArkaVar == 1):
-        feature1 = cv2.imread('./'+banknot+'lira/feature1on.jpg')
-        feature2 = cv2.imread('./'+banknot+'lira/feature2on.jpg')
-        feature3 = cv2.imread('./'+banknot+'lira/feature3on.jpg')
-    else:    
-        feature1 = cv2.imread('./'+banknot+'lira/feature1arka.jpg')
-        feature2 = cv2.imread('./'+banknot+'lira/feature2arka.jpg')
-        feature3 = cv2.imread('./'+banknot+'lira/feature3arka.jpg')
-
-    
-    if (len(SIFTMatching(img, feature1,threshold= 0.6)) > 10):
-        boolArr[0] = True
-    if (len(SIFTMatching(img, feature2,threshold= 0.6)) > 10):
-        boolArr[1] = True
-    if (len(SIFTMatching(img, feature3,threshold= 0.6)) > 10):
-        boolArr[2] = True
-
-
-        
-    return (boolArr[0] and boolArr[1] and boolArr[2])
-
-def getSerialNumber(img):
-    a =  ocr_model.ocr(img)
-    for res in a:
-        x = re.search(regex,res[1][0]) 
-        if(x):
-            return x.group()
-        
-def getAverage(img):
-    average_color_row = np.average(img, axis=0)
-    average_color = np.average(average_color_row, axis=0)
-    return average_color
-#https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
-
-
-
-def isItReal(img):
-    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    valueAsIndex = getValue(img)
-    valueAsString = switch(valueAsIndex)
-    print(valueAsString)
-    onArkaVar = onArka(img)
-    averagePixelValues = getAverage(img)
-    if ((averagePixelValues[0] > (AverageColors[valueAsIndex+onArkaVar][0]-10) or averagePixelValues[0] < (AverageColors[valueAsIndex+onArkaVar][0]+10)) and (averagePixelValues[1] > (AverageColors[valueAsIndex+onArkaVar][1]-10) or averagePixelValues[1] < (AverageColors[valueAsIndex+onArkaVar][1]+10)) and (averagePixelValues[2] > (AverageColors[valueAsIndex+onArkaVar][2]-10) or averagePixelValues[2] < (AverageColors[valueAsIndex+onArkaVar][2]+10))): #color check
-        print("Color check passed")
-        if(onArkaVar):
-            print(onArkaVar)
-            leftSerialNumber = getSerialNumber(img)
-            rightSerialNumber = getSerialNumber(img)
-            if(leftSerialNumber==rightSerialNumber):#first one should be left bottom second one should be right top
-                print("having a serial number check passed")
-                print(leftSerialNumber)
-                print(valueAsString)
-                print(len(SerialNumber))
-                for i in range(len(SerialNumber)):
-                    print(SerialNumber[i][0], SerialNumber[i][1])
-                    if ((SerialNumber[i][0] == leftSerialNumber) and (SerialNumber[i][1] == valueAsString)):
-                        print("Having a valid serial number check passed")
-                        break
-            else:
-                return False
-        return compareFeatures(img, valueAsString, onArkaVar)
-    else:
-        print("Color check failed")
-        return False
+# def compareText(img):
+#     beslira = ["Ord","Prof","Dr","AYDINSAYILI","BES","1913-1993"]
+#     onlira = ["Ord","Prof","Dr","CAHIT","ARF","ON","1910-1997"]
+#     yirmilira = ["MIMARKEMALEDDIN","1870-1927","YIRMI"]
+#     ellilira = ["FATMAALIYE","1862-1936","ELLI"]
+#     yuzlira = ["ITRI","1640-1712","YUZ","BuhurizadeMustafafendi"]
+#     ikiyuzlira = ["YUNUSEMRE","1238-1320","IKIYUZ"]
+#     ortak= ["TURKIYECUMHURIYETIMERKEZANKASI","TURKLIRASI","14OCAK1970TARIHVE1211SAYILIKANUNUNAGORECIKARILMISTIR","BASKAN","BASKANYARDIMCISI","TURKIYECUMHURIYETIMERKEZBANKASIBANKNOTMATBAASI2009"]
 
 def onArka(img, valueAsString):
     img3 = cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arka.jpg')
@@ -234,7 +165,88 @@ def onArka(img, valueAsString):
         return 0 #arka
     else:
         return 1 #on
-    
 
-# cv2.imshow('image', a)
-# cv2.waitKey(0)
+def templateMatching(img,template,threshold):
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    w, h = template.shape[::-1]
+    res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
+    threshold = threshold
+    loc = np.where( res >= threshold)
+    print("ilk feature",len(loc[0]))
+    print("ikinci feature",len(loc[1]))
+    if ((len(loc[0])>0) and (len(loc[1])>0)):
+        return True
+    else:
+        return False
+
+def compareFeatures(img, banknot, onArkaVar):
+    boolArr = [False,False]
+    fature1 = 0
+    feature2 = 0
+    if(onArkaVar == 1):
+        feature1 = cv2.imread('./'+banknot+'lira/feature1on.jpg',0)
+        feature2 = cv2.imread('./'+banknot+'lira/feature2on.jpg',0)
+    else:    
+        feature1 = cv2.imread('./'+banknot+'lira/feature1arka.jpg',0)
+        feature2 = cv2.imread('./'+banknot+'lira/feature2arka.jpg',0)
+
+    if (templateMatching(img, feature1,threshold= 0.2)):
+        boolArr[0] = True
+    if (templateMatching(img, feature2,threshold= 0.6)):
+        boolArr[1] = True
+
+    return (boolArr[0] and boolArr[1])
+
+def getSerialNumber(img, serial = False, x = 0, y = 0, w = 0, h = 0):
+    if serial:
+        img = cropImage(img, x, y, w, h)
+        a =  ocr_model.ocr(img)
+        for res in a:
+            x = re.search(regex,res[1][0]) 
+            if(x):
+                return x.group()
+    else:
+        a =  ocr_model.ocr(img)
+        return a
+        
+def getAverage(img):
+    average_color_row = np.average(img, axis=0)
+    average_color = np.average(average_color_row, axis=0)
+    return average_color
+#https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
+
+
+
+def isItReal(img):
+    w = img.shape[1]
+    h = img.shape[0]
+    valueAsIndex = getValue(img)
+    valueAsString = switch(valueAsIndex)
+    print(valueAsString)
+    onArkaVar = onArka(img, valueAsString)
+    averagePixelValues = getAverage(img)
+    if ((averagePixelValues[0] > (AverageColors[valueAsIndex+onArkaVar][0]-10) or averagePixelValues[0] < (AverageColors[valueAsIndex+onArkaVar][0]+10)) and (averagePixelValues[1] > (AverageColors[valueAsIndex+onArkaVar][1]-10) or averagePixelValues[1] < (AverageColors[valueAsIndex+onArkaVar][1]+10)) and (averagePixelValues[2] > (AverageColors[valueAsIndex+onArkaVar][2]-10) or averagePixelValues[2] < (AverageColors[valueAsIndex+onArkaVar][2]+10))): #color check
+        print("Color check passed")
+        print("HangiYuz",onArkaVar)
+        if(onArkaVar):
+            leftSerialNumber = getSerialNumber(img, serial = True, x = 0, y = h//2-1, w = w//2, h = h//2)
+            leftSerialNumber = leftSerialNumber.replace(" ","")
+            rightSerialNumber = getSerialNumber(img, serial = True, x = w//2-1, y = 0, w = w//2, h = h//2)
+            rightSerialNumber = rightSerialNumber.replace(" ","")
+            if(leftSerialNumber==rightSerialNumber):
+                print("having a serial number check passed")
+                for i in range(len(SerialNumber)):
+                    print(SerialNumber[i][0], SerialNumber[i][1])
+                    if ((SerialNumber[i][0] == leftSerialNumber) and (SerialNumber[i][1] == valueAsString)):
+                        print("Having a valid serial number check passed")
+                        break
+            else:
+                return False
+        return compareFeatures(img, valueAsString, onArkaVar)
+    else:
+        print("Color check failed")
+        return False
+
+print(isItReal(img3))
+
+
