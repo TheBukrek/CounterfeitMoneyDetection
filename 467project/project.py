@@ -142,14 +142,26 @@ def getValue(img):
             return i
     return -1
 
-def compareFeatures(img, banknot):
-    boolArr = [False, False, False, False, False]
+def compareText(img):
+    beslira = []
+    onlira = []
+    yirmilira = []
+    ellilira = []
+    yuzlira = []
+    ikiyuzlira = []
+
+
+def compareFeatures(img, banknot, onArkaVar):
+    boolArr = [False, False, False, False]
     feature1 = cv2.imread('./'+banknot+'lira/')
     feature2 = cv2.imread('./'+banknot+'lira/')
     feature3 = cv2.imread('./'+banknot+'lira/')
-    feature4 = cv2.imread('./'+banknot+'lira/')
-    feature5 = cv2.imread('./'+banknot+'lira/')
-
+    feature4=0
+    if(onArkaVar == 1):
+        feature4 = cv2.imread('./'+banknot+'lira/')
+    else:    
+        feature4 = cv2.imread('./'+banknot+'lira/')
+    
     if (len(SIFTMatching(img, feature1,threshold= 0.6)) > 10):
         boolArr[0] = True
     if (len(SIFTMatching(img, feature2,threshold= 0.6)) > 10):
@@ -158,10 +170,9 @@ def compareFeatures(img, banknot):
         boolArr[2] = True
     if (len(SIFTMatching(img, feature4,threshold= 0.6)) > 10):
         boolArr[3] = True
-    if (len(SIFTMatching(img, feature5,threshold= 0.6)) > 10):
-        boolArr[4] = True
+
         
-    return boolArr[0]&boolArr[1]&boolArr[2]&boolArr[3]&boolArr[4]
+    return boolArr[0]&boolArr[1]&boolArr[2]&boolArr[3]
 
 def getSerialNumber(img):
     a =  ocr_model.ocr(img)
@@ -200,8 +211,7 @@ def isItReal(img):
                         return False
             else:
                 return False
-        
-
+        return compareFeatures(img, valueAsString, onArkaVar)
     else:
         return False
 
