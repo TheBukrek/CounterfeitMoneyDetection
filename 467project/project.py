@@ -5,18 +5,18 @@ from paddleocr import PaddleOCR, draw_ocr
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 ocr_model = PaddleOCR(lang='en')
-# import pytesseract
-# pytesseract.pytesseract.tesseract_cmd = r'/Users/ardacakiroglu/opt/anaconda3/envs/bil/bin/tesseract'
-# import keras_ocr
-# pipeline = keras_ocr.pipeline.Pipeline()
+
 
 #read IMG-0227.jpg
-img = cv2.imread('IMG-0247.jpg')
-img2 = cv2.imread('./SayisalDegerler/5.jpg')
-img3 = cv2.imread('IMG-0250.jpg')
+img = cv2.imread('./200lira/200arka.jpg')
+img3 = cv2.imread('./test/IMG-0243.jpg')
 
 SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"]]
-
+AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.51941937,211.44919905],   #5 on arka
+[197.09770052,206.99769764,221.83599514],[190.53522185,199.3998723,222.00563065],  #10
+[190.23110401,206.23049607,219.89297753],[179.4851876,198.05615184,217.17329562], #50
+[200.46706143,207.18465437,208.16439179],[186.17739601,188.89303057,186.71363359], #100
+[198.70505261,205.32944652,213.69402226],[174.66094381,188.52701888,205.65357185]] #200
 def backgroundSubtraction(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #extract biggest object in the image
@@ -73,15 +73,6 @@ def SIFTMatching(img1, img2,threshold=0.25, debug = False):
         cv2.imshow("img3", img3)
         cv2.waitKey(0)
     return  good
-
-# def getTextKeras(img):
-#     prediction_groups = pipeline.recognize(img)
-#     return prediction_groups
-
-# def getTextTesseract(img):
-#     #get text from image
-#     text = pytesseract.image_to_string(img, lang='tur')
-#     return text
 
 def align_Images(img, template, maxFeatures=2000, keepPercent=0.5,debug = False):
     imageGray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -170,23 +161,18 @@ def getSerialNumber(img):
     return ocr_model.ocr(img)
 
 def getAverage(img):
-    return np.average(img)
-
+    average_color_row = np.average(img, axis=0)
+    average_color = np.average(average_color_row, axis=0)
+    return average_color
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
 
 # print(getTextTesseract(img))
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-# a = align_Images(img, img2, keepPercent=0.25)
-# #crop image
-
-# print(getTextTesseract(a))
-# cv2.imshow('image', c)
+# a = align_Images(img3, img, keepPercent=0.25)
+print(getAverage(img))
 # cv2.waitKey(0)
-result =  getSerialNumber(img)
-print(result)
-print("a")
-# cv2.imshow('image',img2)
+# cv2.imshow('image',a)
 # cv2.waitKey(0)
 
 
