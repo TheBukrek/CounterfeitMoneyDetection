@@ -12,7 +12,7 @@ ocr_model = PaddleOCR(lang='en')
 #read IMG-0227.jpg
 img = cv2.imread('./5lira/5arkac.jpg')
 img2 = cv2.imread('./5lira/feature1arka.jpg',0)
-img3 = cv2.imread('./test/IMG-0227.jpg')
+img3 = cv2.imread('./test/IMG-0255.jpg')
 
 SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"],["E032024297","5"]]
 AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.51941937,211.44919905],   #5 on arka
@@ -189,12 +189,7 @@ def getAverage(img):
     return average_color
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
-def onArka(img, valueAsString):
-    detector = cv2.imread('./'+valueAsString+'lira/feature1arka.jpg')
-    if(len(SIFTMatching(img, detector ,threshold= 0.6)) > 10):
-        return 0
-    else:
-        return 1
+
 
 def isItReal(img):
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -226,28 +221,20 @@ def isItReal(img):
         print("Color check failed")
         return False
 
+def onArka(img, valueAsString):
+    img3 = cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arka.jpg')
+    aligned = align_Images(img, img3, keepPercent = 0.25)
+    img_gray = cv2.cvtColor(aligned, cv2.COLOR_BGR2GRAY)
+    template = cv2.imread('./'+valueAsString+'lira/feature1arka.jpg',0)
+    w, h = template.shape[::-1]
+    res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
+    threshold = 0.4
+    loc = np.where( res >= threshold)
+    if ((len(loc[0])>0) and (len(loc[1])>0)):
+        return 0 #arka
+    else:
+        return 1 #on
     
-    
 
-
-# print(getTextTesseract(img))
-cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-# a = align_Images(img3, img, keepPercent=0.25)
-a = align_Images(img3, img, keepPercent=0.25)
-img_gray = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY)
-template = img2
-w, h = template.shape[::-1]
-res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
-threshold = 0.9
-loc = np.where( res >= threshold)
-print(loc)
-for pt in zip(*loc[::-1]):
-    cv2.rectangle(a, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
-cv2.imshow('image', a)
-cv2.waitKey(0)
-# SIFTMatching(a, img2, threshold= 0.25, debug=True)
-# cv2.imshow('image',a)
+# cv2.imshow('image', a)
 # cv2.waitKey(0)
-# cv2.waitKey(0)
-
-
