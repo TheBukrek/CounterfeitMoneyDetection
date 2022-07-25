@@ -120,7 +120,7 @@ def binarize(img, threshold):
 
 def switch(i):
     if i == 0:
-        return 5
+        return "5"
     elif i == 1:
         return "10"
     elif i == 2:
@@ -168,6 +168,9 @@ def compareFeatures(img, banknot):
 
 def getSerialNumber(img):
     return ocr_model.ocr(img)
+
+def getAverage(img):
+    return np.average(img)
 
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
