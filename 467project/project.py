@@ -9,9 +9,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 ocr_model = PaddleOCR(lang='en')
 
 #read IMG-0227.jpg
-img = cv2.imread('./5lira/5arkac.jpg')
-img2 = cv2.imread('./5lira/feature1arka.jpg',0)
-img3 = cv2.imread('./test/IMG-0227.jpg')
+img3 = cv2.imread('./test/IMG-0242.jpg')
 
 SerialNumber = [["E001458613","20"],["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"],["E032024297","5"]]
 AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.51941937,211.44919905],   #5 on arka
@@ -52,7 +50,6 @@ regex = "[A-Z][0-9]{9}"
 #         if cnt[i][0][1] > top:
 #             top = cnt[i][0][1]
 #     cornersArr = np.float32([[[left, bottom]] , [[right, bottom]] , [[left, top]] , [[right, top]]])
-
 #     return out,cornersArr
 
 def SIFTMatching(img1, img2,threshold=0.25, debug = False):
@@ -152,8 +149,8 @@ def getValue(img):
 #     ikiyuzlira = ["YUNUSEMRE","1238-1320","IKIYUZ"]
 #     ortak= ["TURKIYECUMHURIYETIMERKEZANKASI","TURKLIRASI","14OCAK1970TARIHVE1211SAYILIKANUNUNAGORECIKARILMISTIR","BASKAN","BASKANYARDIMCISI","TURKIYECUMHURIYETIMERKEZBANKASIBANKNOTMATBAASI2009"]
 
-def onArka(img, valueAsString):
-    img3 = cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arka.jpg')
+def onArka(img, valueAsString,debug = False):
+    img3 = cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arkac.jpg')
     aligned = align_Images(img, img3, keepPercent = 0.25)
     img_gray = cv2.cvtColor(aligned, cv2.COLOR_BGR2GRAY)
     template = cv2.imread('./'+valueAsString+'lira/feature1arka.jpg',0)
@@ -161,17 +158,30 @@ def onArka(img, valueAsString):
     res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
     threshold = 0.4
     loc = np.where( res >= threshold)
+    if debug:
+        for pt in zip(*loc[::-1]):
+            cv2.rectangle(aligned, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+        cv2.namedWindow('img', cv2.WINDOW_NORMAL)
+        cv2.imshow('img', aligned)
+        cv2.waitKey(0)
+
     if ((len(loc[0])>0) and (len(loc[1])>0)):
         return 0 #arka
     else:
         return 1 #on
 
-def templateMatching(img,template,threshold):
+def templateMatching(img,template,threshold,debug = False):
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     w, h = template.shape[::-1]
     res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
     threshold = threshold
     loc = np.where( res >= threshold)
+    if debug:
+        for pt in zip(*loc[::-1]):
+            cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+        cv2.namedWindow('img', cv2.WINDOW_NORMAL)
+        cv2.imshow('img', img)
+        cv2.waitKey(0)
     print("ilk feature",len(loc[0]))
     print("ikinci feature",len(loc[1]))
     if ((len(loc[0])>0) and (len(loc[1])>0)):
@@ -180,22 +190,18 @@ def templateMatching(img,template,threshold):
         return False
 
 def compareFeatures(img, banknot, onArkaVar):
-    boolArr = [False,False]
-    fature1 = 0
     feature2 = 0
     if(onArkaVar == 1):
-        feature1 = cv2.imread('./'+banknot+'lira/feature1on.jpg',0)
         feature2 = cv2.imread('./'+banknot+'lira/feature2on.jpg',0)
     else:    
-        feature1 = cv2.imread('./'+banknot+'lira/feature1arka.jpg',0)
         feature2 = cv2.imread('./'+banknot+'lira/feature2arka.jpg',0)
 
-    if (templateMatching(img, feature1,threshold= 0.2)):
-        boolArr[0] = True
-    if (templateMatching(img, feature2,threshold= 0.6)):
-        boolArr[1] = True
+    if (templateMatching(img, feature2 ,threshold= 0.2)):
+        return True
+    else:
+        return False
 
-    return (boolArr[0] and boolArr[1])
+
 
 def getSerialNumber(img, serial = False, x = 0, y = 0, w = 0, h = 0):
     if serial:
@@ -214,8 +220,6 @@ def getAverage(img):
     average_color = np.average(average_color_row, axis=0)
     return average_color
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
-
-
 
 def isItReal(img):
     w = img.shape[1]
@@ -236,7 +240,6 @@ def isItReal(img):
             if(leftSerialNumber==rightSerialNumber):
                 print("having a serial number check passed")
                 for i in range(len(SerialNumber)):
-                    print(SerialNumber[i][0], SerialNumber[i][1])
                     if ((SerialNumber[i][0] == leftSerialNumber) and (SerialNumber[i][1] == valueAsString)):
                         print("Having a valid serial number check passed")
                         break
@@ -248,5 +251,3 @@ def isItReal(img):
         return False
 
 print(isItReal(img3))
-
-
