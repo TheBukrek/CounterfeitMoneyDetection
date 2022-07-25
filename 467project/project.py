@@ -3,12 +3,14 @@ from cv2 import threshold
 import numpy as np
 from paddleocr import PaddleOCR, draw_ocr
 import os
+import re
+
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 ocr_model = PaddleOCR(lang='en')
 
 
 #read IMG-0227.jpg
-img = cv2.imread('./200lira/200arka.jpg')
+img = cv2.imread('./5lira/5on.jpg')
 img3 = cv2.imread('./test/IMG-0243.jpg')
 
 SerialNumber = [["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"]]
@@ -17,6 +19,8 @@ AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.5194
 [190.23110401,206.23049607,219.89297753],[179.4851876,198.05615184,217.17329562], #50
 [200.46706143,207.18465437,208.16439179],[186.17739601,188.89303057,186.71363359], #100
 [198.70505261,205.32944652,213.69402226],[174.66094381,188.52701888,205.65357185]] #200
+
+regex = "[A-Z][0-9]{9}"
 def backgroundSubtraction(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     #extract biggest object in the image
@@ -122,6 +126,8 @@ def switch(i):
         return "100"
     elif i == 5:
         return "200"
+    else:
+        return -1
 
 def getValue(img):
     banknot5 = cv2.imread('./SayisalDegerler/5.jpg')
@@ -158,19 +164,56 @@ def compareFeatures(img, banknot):
     return boolArr[0]&boolArr[1]&boolArr[2]&boolArr[3]&boolArr[4]
 
 def getSerialNumber(img):
-    return ocr_model.ocr(img)
-
+    a =  ocr_model.ocr(img)
+    for res in a:
+        x = re.search(regex,res[1][0]) 
+        if(x):
+            return x.group()
+        
 def getAverage(img):
     average_color_row = np.average(img, axis=0)
     average_color = np.average(average_color_row, axis=0)
     return average_color
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
+def onArka(img):
+    if True:
+        return 0
+    return 1
+
+def isItReal(img):
+    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    valueAsIndex = getValue(img)
+    valueAsString = switch(valueAsIndex)
+    
+    onArkaVar = onArka(img)
+    averagePixelValues = getAverage(img)
+    if ((averagePixelValues[0] > (AverageColors[valueAsIndex+onArkaVar][0]-10) or averagePixelValues[0] < (AverageColors[valueAsIndex+onArkaVar][0]+10)) and (averagePixelValues[1] > (AverageColors[valueAsIndex+onArkaVar][1]-10) or averagePixelValues[1] < (AverageColors[valueAsIndex+onArkaVar][1]+10)) and (averagePixelValues[2] > (AverageColors[valueAsIndex+onArkaVar][2]-10) or averagePixelValues[2] < (AverageColors[valueAsIndex+onArkaVar][2]+10))): #color check
+        if(onArka):
+            leftSerialNumber = getSerialNumber(img)
+            rightSerialNumber = getSerialNumber(img)
+            if(leftSerialNumber==rightSerialNumber):#first one should be left bottom second one should be right top
+                for i in range(len(SerialNumber)):
+                    if ((SerialNumber[i][0] == leftSerialNumber) and (SerialNumber[i][1] == valueAsString)):
+                        break
+                    else:
+                        return False
+            else:
+                return False
+        
+
+    else:
+        return False
+
+    
+    
+
 
 # print(getTextTesseract(img))
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 # a = align_Images(img3, img, keepPercent=0.25)
-print(getAverage(img))
+print( getSerialNumber(img))
+
 # cv2.waitKey(0)
 # cv2.imshow('image',a)
 # cv2.waitKey(0)
