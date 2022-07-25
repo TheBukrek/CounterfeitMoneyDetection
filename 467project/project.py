@@ -9,7 +9,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 ocr_model = PaddleOCR(lang='en')
 
 #read IMG-0227.jpg
-img3 = cv2.imread('./test/IMG-0242.jpg')
+img3 = cv2.imread('./test/IMG-0281.jpg')                           
 
 SerialNumber = [["E001458613","20"],["G010204073","20"],["C407591522","50"],["D331377364","50"],["C512326409","50"],["E066829516","5"],["D162200281","10"],["D137366422","200"],["C063576040","200"],["B290643115","200"],["D974027460","100"],["E117263172","200"],["F057129366","100"],["E022393618","5"],["D875492359","100"],["E032024297","5"]]
 AverageColors = [[202.56503923, 211.121212, 218.24664536],[196.40794344,204.51941937,211.44919905],   #5 on arka
@@ -112,33 +112,33 @@ def binarize(img, threshold):
     return thresh
 
 def switch(i):
-    if i == 0:
-        return "5"
-    elif i == 1:
-        return "10"
-    elif i == 2:
-        return "20"
-    elif i == 3:
-        return "50"
-    elif i == 4:
-        return "100"
-    elif i == 5:
-        return "200"
+    if i == "5":
+        return 0
+    elif i == "10":
+        return 1
+    elif i == "20":
+        return 2
+    elif i == "50":
+        return 3
+    elif i == "100":
+        return 4
+    elif i == "200":
+        return 5
     else:
         return -1
 
-def getValue(img):
-    banknot5 = cv2.imread('./SayisalDegerler/5.jpg')
-    banknot10 = cv2.imread('./SayisalDegerler/10.jpg')
-    banknot20 = cv2.imread('./SayisalDegerler/20.jpg')
-    banknot50 = cv2.imread('./SayisalDegerler/50.jpg')
-    banknot100 = cv2.imread('./SayisalDegerler/100.jpg')
-    banknot200 = cv2.imread('./SayisalDegerler/200.jpg')
-    a = [banknot5, banknot10, banknot20, banknot50, banknot100, banknot200]
-    for i in range(len(a)):
-        if (len(SIFTMatching(img, a[i],threshold= 0.6)) > 10):
-            return i
-    return -1
+# def getValue(img):
+#     banknot5 = cv2.imread('./SayisalDegerler/5.jpg')
+#     banknot10 = cv2.imread('./SayisalDegerler/10.jpg')
+#     banknot20 = cv2.imread('./SayisalDegerler/20.jpg')
+#     banknot50 = cv2.imread('./SayisalDegerler/50.jpg')
+#     banknot100 = cv2.imread('./SayisalDegerler/100.jpg')
+#     banknot200 = cv2.imread('./SayisalDegerler/200.jpg')
+#     a = [banknot5, banknot10, banknot20, banknot50, banknot100, banknot200]
+#     for i in range(len(a)):
+#         if (len(SIFTMatching(img, a[i],threshold= 0.4,debug=True)) > 10):
+#             return i
+#     return -1
 
 # def compareText(img):
 #     beslira = ["Ord","Prof","Dr","AYDINSAYILI","BES","1913-1993"]
@@ -196,7 +196,7 @@ def compareFeatures(img, banknot, onArkaVar):
     else:    
         feature2 = cv2.imread('./'+banknot+'lira/feature2arka.jpg',0)
 
-    if (templateMatching(img, feature2 ,threshold= 0.2)):
+    if (templateMatching(img, feature2 ,threshold= 0.2,debug=True)):
         return True
     else:
         return False
@@ -221,14 +221,43 @@ def getAverage(img):
     return average_color
 #https://pyimagesearch.com/2020/08/31/image-alignment-and-registration-with-opencv/
 
+def getValue2(arr):
+    for i in range(len(arr)):
+        if (arr[i][1][0]=="5"):
+            return "5"
+        elif(arr[i][1][0]=="10"):
+            return "10"
+        elif(arr[i][1][0]=="20"):
+            return "20"
+        elif(arr[i][1][0]=="50"):
+            return "50"
+        elif(arr[i][1][0]=="100"):
+            return "100"
+        elif(arr[i][1][0]=="200"):
+            return "200"
+
+    
 def isItReal(img):
     w = img.shape[1]
     h = img.shape[0]
-    valueAsIndex = getValue(img)
-    valueAsString = switch(valueAsIndex)
+    a = getSerialNumber(img)
+    valueAsString = getValue2(a)
+    valueAsIndex = switch(valueAsString)
     print(valueAsString)
     onArkaVar = onArka(img, valueAsString)
-    averagePixelValues = getAverage(img)
+    if(onArkaVar == 1):
+        aligned = align_Images(img, cv2.imread('./'+valueAsString+'lira/'+valueAsString+'on.jpg'), keepPercent = 0.25)
+    else:
+        aligned = align_Images(img, cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arka.jpg'), keepPercent = 0.25)
+
+    if(onArkaVar == 1):
+        print("arka2")
+        aligned2 = align_Images(img, cv2.imread('./'+valueAsString+'lira/'+valueAsString+'onc.jpg'), keepPercent = 0.25)
+    else:
+        print("on2")
+        aligned2 = align_Images(img, cv2.imread('./'+valueAsString+'lira/'+valueAsString+'arkac.jpg'), keepPercent = 0.25)
+    
+    averagePixelValues = getAverage(aligned)
     if ((averagePixelValues[0] > (AverageColors[valueAsIndex+onArkaVar][0]-10) or averagePixelValues[0] < (AverageColors[valueAsIndex+onArkaVar][0]+10)) and (averagePixelValues[1] > (AverageColors[valueAsIndex+onArkaVar][1]-10) or averagePixelValues[1] < (AverageColors[valueAsIndex+onArkaVar][1]+10)) and (averagePixelValues[2] > (AverageColors[valueAsIndex+onArkaVar][2]-10) or averagePixelValues[2] < (AverageColors[valueAsIndex+onArkaVar][2]+10))): #color check
         print("Color check passed")
         print("HangiYuz",onArkaVar)
@@ -245,7 +274,7 @@ def isItReal(img):
                         break
             else:
                 return False
-        return compareFeatures(img, valueAsString, onArkaVar)
+        return compareFeatures(aligned2, valueAsString, onArkaVar)
     else:
         print("Color check failed")
         return False
